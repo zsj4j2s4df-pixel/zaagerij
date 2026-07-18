@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <!-- viewport-fit=cover + safe-area zorgt dat het goed staat op iPhone met notch -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#7E5230" />
+
+  <!-- iPhone/iPad: als "web-app" laten voelen wanneer je hem op het beginscherm zet -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Waterslag" />
+
+  <title>Waterslag — inmeten</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+  <link rel="apple-touch-icon" href="icon-180.png" />
+
+  <!-- Achtergrondkleur uit de huisstijl, zodat er niets wit "flitst" bij het laden -->
+  <style>
+    html, body { margin: 0; padding: 0; background: #E8E3DD; -webkit-text-size-adjust: 100%; }
+    #root { min-height: 100vh; }
+  </style>
+</head>
+<body>
+  <!-- Hier wordt de React-app in gehangen -->
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+</html>

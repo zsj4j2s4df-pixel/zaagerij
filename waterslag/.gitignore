@@ -1,0 +1,9 @@
+# Afhankelijkheden (worden opnieuw opgehaald met "npm install")
+node_modules
+
+# Gebouwde versie (wordt gemaakt met "npm run build")
+dist
+
+# Logs / rommel
+*.log
+.DS_Store
