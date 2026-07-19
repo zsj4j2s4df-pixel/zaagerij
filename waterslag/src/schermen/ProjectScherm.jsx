@@ -73,11 +73,11 @@ export default function ProjectScherm({
               />
             </div>
             <div>
-              <Label>Omschrijving</Label>
+              <Label>Ordernummer</Label>
               <TxtInp
-                value={project.omschrijving}
-                onChange={(v) => onWijzig({ omschrijving: v })}
-                placeholder="bijv. Voorgevel — 5 ramen"
+                value={project.ordernummer}
+                onChange={(v) => onWijzig({ ordernummer: v })}
+                placeholder="bijv. 2025-041"
               />
             </div>
           </div>

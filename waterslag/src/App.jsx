@@ -49,9 +49,14 @@ export default function App() {
 
   // ── Bij het opstarten: eerder opgeslagen gegevens inladen ──────
   useEffect(() => {
-    // Oudere projecten (uit een eerdere versie) krijgen automatisch
-    // een lege waterslagen-lijst, zodat niets stukgaat.
-    const geladen = leesProjecten().map(p => ({ waterslagen: [], opmerking: "", ...p }));
+    // Oudere projecten (uit een eerdere versie) worden automatisch
+    // bijgewerkt: lege waterslagen-lijst erbij, en het oude veld
+    // "omschrijving" wordt het ordernummer, zodat niets kwijtraakt.
+    const geladen = leesProjecten().map(p => ({
+      waterslagen: [], opmerking: "",
+      ordernummer: p.ordernummer ?? p.omschrijving ?? "",
+      ...p,
+    }));
     setProjecten(geladen);
     const sessie = leesSessie();
     if (sessie && sessie.gebruiker) setGebruiker(sessie.gebruiker);
@@ -81,7 +86,7 @@ export default function App() {
     const project = {
       id: nieuwId(),
       klant: "",
-      omschrijving: "",
+      ordernummer: "",
       waterslagen: [],
       opmerking: "",
     };
@@ -102,7 +107,7 @@ export default function App() {
     const kopie = {
       ...actiefProject,
       id: nieuwId(),
-      omschrijving: (actiefProject.omschrijving || "Project") + " (kopie)",
+      klant: (actiefProject.klant || "Project") + " (kopie)",
       // Ook de waterslagen krijgen nieuwe id's, anders delen ze gegevens.
       waterslagen: actiefProject.waterslagen.map(w => ({ ...w, id: nieuwId() })),
     };

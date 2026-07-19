@@ -56,7 +56,9 @@ export default function ProjectLijst({ projecten, onNieuwProject, onOpenProject 
 }
 
 // ── Eén project als aantikbare kaart ────────────────────────────────
+// Toont: klantnaam + ordernummer, en hoeveel waterslagen erin zitten.
 function ProjectKaart({ project, onOpen }) {
+  const aantalTypes = project.waterslagen?.length || 0;
   return (
     <Card style={{ cursor: "pointer", padding: "16px" }}>
       {/* De hele kaart is aantikbaar om het project te openen. */}
@@ -65,7 +67,8 @@ function ProjectKaart({ project, onOpen }) {
           {project.klant?.trim() ? project.klant : "Nog geen klantnaam"}
         </div>
         <div style={{ fontSize: 14, color: C.t3, marginTop: 4 }}>
-          {project.omschrijving?.trim() ? project.omschrijving : "Geen omschrijving"}
+          {project.ordernummer?.trim() ? `Order ${project.ordernummer}` : "Geen ordernummer"}
+          {aantalTypes > 0 && ` · ${aantalTypes} waterslag${aantalTypes === 1 ? "" : "en"}`}
         </div>
       </div>
     </Card>
