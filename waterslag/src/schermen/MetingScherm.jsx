@@ -13,8 +13,10 @@ import ProfielKiezer from "../componenten/ProfielKiezer.jsx";
 import FotoLijst from "../componenten/FotoLijst.jsx";
 import RalKiezer from "../componenten/RalKiezer.jsx";
 import { soortInfo } from "../soorten.js";
+import { useBreed } from "../useBreed.js";
 
 export default function MetingScherm({ meting, projectRal, profielen, onWijzig, onTerug, onVerwijder }) {
+  const breed = useBreed();          // desktop = kaarten in twee kolommen
   const info = soortInfo(meting.soort);
   const standaardNaam = `${info.label} ${meting.volgnummer || ""}`.trim();
 
@@ -40,9 +42,13 @@ export default function MetingScherm({ meting, projectRal, profielen, onWijzig, 
       </div>
 
       {/* ── Inhoud ──────────────────────────────────────────────── */}
-      <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16,
-        maxWidth: 560, margin: "0 auto",
+      <div style={{ padding: 18, maxWidth: breed ? 1000 : 560, margin: "0 auto",
         paddingBottom: "calc(28px + env(safe-area-inset-bottom))" }}>
+
+        {/* De invulkaarten. Op desktop in twee kolommen naast elkaar,
+            op telefoon onder elkaar. */}
+        <div style={{ display: "grid", gap: 16,
+          gridTemplateColumns: breed ? "1fr 1fr" : "1fr", alignItems: "start" }}>
 
         {/* Naam + aantal. Het aantal is de kern van jouw werkwijze:
             3 gelijke stuks = deze regel één keer invullen met aantal 3. */}
@@ -124,11 +130,16 @@ export default function MetingScherm({ meting, projectRal, profielen, onWijzig, 
           />
         </Card>
 
+        </div>{/* einde kaarten-raster */}
+
         {/* Klaar → terug naar het project. Alles is al bewaard. */}
-        <PrimaryBtn onClick={onTerug}>Klaar</PrimaryBtn>
-        <SecondaryBtn onClick={onVerwijder} color={C.red}>
-          {info.label} verwijderen
-        </SecondaryBtn>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 16,
+          maxWidth: breed ? 320 : "100%" }}>
+          <PrimaryBtn onClick={onTerug}>Klaar</PrimaryBtn>
+          <SecondaryBtn onClick={onVerwijder} color={C.red}>
+            {info.label} verwijderen
+          </SecondaryBtn>
+        </div>
       </div>
     </div>
   );

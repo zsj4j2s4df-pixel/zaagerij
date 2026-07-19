@@ -13,6 +13,7 @@ import React, { useState } from "react";
 import { C, F, FM, Card, Label, TxtInp, PrimaryBtn, SecondaryBtn } from "../huisstijl.jsx";
 import { SOORTEN } from "../soorten.js";
 import ProfielTekenaar from "../componenten/ProfielTekenaar.jsx";
+import { useBreed } from "../useBreed.js";
 
 // Klein hulpje om een uniek id te maken voor een nieuw profiel.
 const nieuwId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -21,6 +22,7 @@ const nieuwId = () => Date.now().toString(36) + Math.random().toString(36).slice
 const KLEUR_SNELKEUZE = ["#7E5230", "#2F6F4F", "#1F5C8B", "#B4472E", "#5B4B8A", "#3A3A3C"];
 
 export default function Instellingen({ instellingen, onWijzig, onHerstel, onTerug }) {
+  const breed = useBreed();          // desktop = twee kolommen naast elkaar
 
   // ── Hulpjes om de profielen aan te passen ──────────────────────
   function zetProfielen(soort, nieuweLijst) {
@@ -61,8 +63,12 @@ export default function Instellingen({ instellingen, onWijzig, onHerstel, onTeru
 
       {/* ── Inhoud ──────────────────────────────────────────────── */}
       <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16,
-        maxWidth: 560, margin: "0 auto",
+        maxWidth: breed ? 1000 : 560, margin: "0 auto",
         paddingBottom: "calc(28px + env(safe-area-inset-bottom))" }}>
+
+        {/* Kleur en merknaam: op desktop naast elkaar. */}
+        <div style={{ display: "grid", gap: 16,
+          gridTemplateColumns: breed ? "1fr 1fr" : "1fr", alignItems: "start" }}>
 
         {/* ── Accentkleur ──────────────────────────────────────── */}
         <Card>
@@ -122,7 +128,12 @@ export default function Instellingen({ instellingen, onWijzig, onHerstel, onTeru
           </div>
         </Card>
 
-        {/* ── Profielen beheren, per soort ─────────────────────── */}
+        </div>{/* einde kleur/merknaam-raster */}
+
+        {/* ── Profielen beheren, per soort ─────────────────────────
+            Op desktop de twee soorten naast elkaar. */}
+        <div style={{ display: "grid", gap: 16,
+          gridTemplateColumns: breed ? "1fr 1fr" : "1fr", alignItems: "start" }}>
         {Object.keys(SOORTEN).map(soort => (
           <Card key={soort}>
             <div style={{ fontSize: 15, fontWeight: 800, color: C.t1, marginBottom: 4 }}>
@@ -154,6 +165,7 @@ export default function Instellingen({ instellingen, onWijzig, onHerstel, onTeru
             </div>
           </Card>
         ))}
+        </div>{/* einde profielen-raster */}
 
         {/* ── Alles terugzetten naar de standaard ──────────────── */}
         <SecondaryBtn

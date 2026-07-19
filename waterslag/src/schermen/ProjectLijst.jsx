@@ -6,10 +6,12 @@
 
 import React from "react";
 import { C, F, Card, PrimaryBtn } from "../huisstijl.jsx";
+import { useBreed } from "../useBreed.js";
 
 export default function ProjectLijst({
   projecten, instellingen, onNieuwProject, onOpenProject, onOpenInstellingen,
 }) {
+  const breed = useBreed(); // desktop = breder + raster
   return (
     <div style={{ minHeight: "100vh", background: C.bg, fontFamily: F }}>
 
@@ -46,15 +48,19 @@ export default function ProjectLijst({
       </div>
 
       {/* ── Inhoud ──────────────────────────────────────────────── */}
-      <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14,
-        maxWidth: 560, margin: "0 auto" }}>
+      <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16,
+        maxWidth: breed ? 1040 : 560, margin: "0 auto" }}>
 
-        {/* Knop om een nieuw project te starten (primaire actie) */}
-        <PrimaryBtn onClick={onNieuwProject} icon={<span style={{ fontSize: 18 }}>+</span>}>
-          Nieuw project
-        </PrimaryBtn>
+        {/* Knop om een nieuw project te starten (primaire actie).
+            Op desktop niet over de volle breedte, maar compact links. */}
+        <div style={{ maxWidth: breed ? 260 : "100%" }}>
+          <PrimaryBtn onClick={onNieuwProject} icon={<span style={{ fontSize: 18 }}>+</span>}>
+            Nieuw project
+          </PrimaryBtn>
+        </div>
 
-        {/* Lege lijst → vriendelijke uitleg. Anders → de kaarten. */}
+        {/* Lege lijst → vriendelijke uitleg. Anders → de kaarten.
+            Op desktop tonen we de kaarten in een raster van meerdere kolommen. */}
         {projecten.length === 0 ? (
           <div style={{ textAlign: "center", color: C.t3, fontSize: 14,
             padding: "40px 20px", lineHeight: 1.5 }}>
@@ -62,13 +68,16 @@ export default function ProjectLijst({
             Tik op “Nieuw project” om te beginnen.
           </div>
         ) : (
-          projecten.map(project => (
-            <ProjectKaart
-              key={project.id}
-              project={project}
-              onOpen={() => onOpenProject(project.id)}
-            />
-          ))
+          <div style={{ display: "grid", gap: 14,
+            gridTemplateColumns: breed ? "repeat(auto-fill, minmax(280px, 1fr))" : "1fr" }}>
+            {projecten.map(project => (
+              <ProjectKaart
+                key={project.id}
+                project={project}
+                onOpen={() => onOpenProject(project.id)}
+              />
+            ))}
+          </div>
         )}
       </div>
     </div>
