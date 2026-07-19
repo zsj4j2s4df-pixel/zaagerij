@@ -1,37 +1,36 @@
 // ══════════════════════════════════════════════════════════════════
 //  SCHERM 3 — PROJECTSCHERM (hoofdscherm van één project)
-//  Bovenaan de klantgegevens, daaronder de lijst met metingen.
-//  Een meting is een waterslag óf een dakkap; beide mogen in hetzelfde
-//  project. Eén regel kan voor meerdere gelijke stuks staan (aantal):
-//  bv. 5 ramen = "Type A ×3" + twee losse afwijkende regels.
+//  Bovenaan de klantgegevens (incl. RAL-kleur voor het hele project),
+//  daaronder twee tabs: Waterslagen en Dakkappen. Elke tab toont zijn
+//  eigen lijst en een eigen toevoeg-knop — apart voor de overzichtelijkheid.
+//  Eén regel kan voor meerdere gelijke stuks staan (aantal).
 //  Onderaan: opmerkingen + "Opslaan" en "Opslaan als".
 // ══════════════════════════════════════════════════════════════════
 
 import React, { useState } from "react";
 import { C, F, FM, Card, TxtInp, Label, PrimaryBtn, SecondaryBtn } from "../huisstijl.jsx";
 import ProjectOpmerkingen from "../componenten/ProjectOpmerkingen.jsx";
-import { soortInfo } from "../soorten.js";
+import RalKiezer from "../componenten/RalKiezer.jsx";
+import { ralNaarHex } from "../ralKleuren.js";
+import { SOORTEN, soortInfo } from "../soorten.js";
 
 export default function ProjectScherm({
-  project, instellingen, onWijzig, onNieuweMeting, onOpenMeting, onOpslaanAls, onTerug,
+  project, instellingen, actieveSoort, onKiesSoort,
+  onWijzig, onNieuweMeting, onOpenMeting, onOpslaanAls, onTerug,
 }) {
+  // Welke tab open staat ("waterslag"/"dakkap") wordt in App bewaard, zodat
+  // je na het bewerken van een onderdeel op dezelfde tab terugkomt.
   // Korte melding na het opslaan ("Opgeslagen ✓").
   const [melding, setMelding] = useState("");
 
   const metingen = project.metingen || [];
+  const info = soortInfo(actieveSoort);
 
-  // Totaal aantal stuks per soort, bv. { waterslag: 5, dakkap: 2 }.
-  const totalen = {};
-  metingen.forEach(m => {
-    totalen[m.soort] = (totalen[m.soort] || 0) + (parseInt(m.aantal, 10) || 0);
-  });
-  // Daarvan een leesbaar zinnetje maken: "5 waterslagen · 2 dakkappen".
-  const totaalTekst = Object.keys(totalen)
-    .map(s => `${totalen[s]} ${soortInfo(s).meervoud}`)
-    .join(" · ");
+  // Alleen de metingen van de open tab.
+  const zichtbaar = metingen.filter(m => m.soort === actieveSoort);
+  // Totaal aantal stuks in deze tab.
+  const stuks = zichtbaar.reduce((som, m) => som + (parseInt(m.aantal, 10) || 0), 0);
 
-  // Opslaan gebeurt eigenlijk al automatisch (localStorage), maar de knop
-  // geeft een geruststellend "Opgeslagen ✓" zodat je weet dat het goed zit.
   function opslaan() {
     setMelding("Opgeslagen ✓");
     setTimeout(() => setMelding(""), 1800);
@@ -68,7 +67,7 @@ export default function ProjectScherm({
         maxWidth: 560, margin: "0 auto",
         paddingBottom: "calc(28px + env(safe-area-inset-bottom))" }}>
 
-        {/* Klantgegevens */}
+        {/* Klantgegevens + RAL-kleur voor het hele project */}
         <Card>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
@@ -87,47 +86,62 @@ export default function ProjectScherm({
                 placeholder="bijv. 2025-041"
               />
             </div>
+            <RalKiezer
+              label="RAL-kleur (hele project)"
+              value={project.ral}
+              onChange={(v) => onWijzig({ ral: v })}
+              placeholder="bijv. 7016"
+              hint="Geldt voor alle onderdelen, tenzij je bij een onderdeel een eigen kleur invult."
+            />
           </div>
         </Card>
 
-        {/* Kopje boven de lijst, met het totaal per soort */}
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
-          <div style={{ fontSize: 16, fontWeight: 800, color: C.t1 }}>Metingen</div>
-          <div style={{ fontSize: 13, color: C.t3, textAlign: "right" }}>
-            {metingen.length === 0 ? "nog geen" : totaalTekst}
-          </div>
+        {/* ── Tabs: Waterslagen / Dakkappen ────────────────────── */}
+        <div style={{ display: "flex", background: C.inset, border: `1px solid ${C.sep}`,
+          borderRadius: 12, padding: 4, gap: 4 }}>
+          {Object.keys(SOORTEN).map(soort => {
+            const aan = soort === actieveSoort;
+            const n = metingen.filter(m => m.soort === soort).length;
+            const mv = SOORTEN[soort].meervoud;                  // "waterslagen"
+            const titel = mv.charAt(0).toUpperCase() + mv.slice(1); // "Waterslagen"
+            return (
+              <button
+                key={soort}
+                onClick={() => onKiesSoort(soort)}
+                style={{
+                  flex: 1, padding: "10px 8px", borderRadius: 9, border: "none",
+                  cursor: "pointer", fontFamily: F, fontSize: 14, fontWeight: 700,
+                  background: aan ? C.card : "transparent",
+                  color: aan ? C.brand : C.t3,
+                  boxShadow: aan ? C.shadow : "none",
+                }}
+              >
+                {titel}{n > 0 ? ` (${n})` : ""}
+              </button>
+            );
+          })}
         </div>
 
-        {/* De lijst met metingen */}
-        {metingen.length === 0 ? (
-          <div style={{ textAlign: "center", color: C.t3, fontSize: 14,
-            padding: "18px 20px", lineHeight: 1.5 }}>
-            Nog geen metingen in dit project.<br />
-            Voeg hieronder een waterslag of een dakkap toe.
-          </div>
-        ) : (
-          metingen.map((m, i) => (
-            <MetingKaart key={m.id} meting={m} index={i}
-              profielen={instellingen.profielen[m.soort] || []}
-              onOpen={() => onOpenMeting(m.id)} />
-          ))
-        )}
-
-        {/* Twee toevoeg-knoppen: kies waterslag of dakkap */}
-        <div style={{ display: "flex", gap: 10 }}>
-          <div style={{ flex: 1 }}>
-            <PrimaryBtn onClick={() => onNieuweMeting("waterslag")}
-              icon={<span style={{ fontSize: 17 }}>+</span>}>
-              Waterslag
-            </PrimaryBtn>
-          </div>
-          <div style={{ flex: 1 }}>
-            <PrimaryBtn onClick={() => onNieuweMeting("dakkap")}
-              icon={<span style={{ fontSize: 17 }}>+</span>}>
-              Dakkap
-            </PrimaryBtn>
-          </div>
+        {/* Totaal-regel voor de open tab */}
+        <div style={{ fontSize: 13, color: C.t3, marginTop: -4 }}>
+          {zichtbaar.length === 0
+            ? `Nog geen ${info.meervoud} in dit project.`
+            : `${stuks} ${stuks === 1 ? info.label.toLowerCase() : info.meervoud} totaal`}
         </div>
+
+        {/* De lijst met metingen van de open tab */}
+        {zichtbaar.map((m, i) => (
+          <MetingKaart key={m.id} meting={m} index={i}
+            projectRal={project.ral}
+            profielen={instellingen.profielen[m.soort] || []}
+            onOpen={() => onOpenMeting(m.id)} />
+        ))}
+
+        {/* Toevoeg-knop voor de open soort */}
+        <PrimaryBtn onClick={() => onNieuweMeting(actieveSoort)}
+          icon={<span style={{ fontSize: 18 }}>+</span>}>
+          {info.label} toevoegen
+        </PrimaryBtn>
 
         {/* Algemene opmerkingen voor het hele project */}
         <ProjectOpmerkingen
@@ -151,8 +165,8 @@ export default function ProjectScherm({
 }
 
 // ── Eén meting-regel als aantikbare kaart ──────────────────────────
-// Toont: soort-label, naam, aantal (bv. ×3), de maten en het profiel.
-function MetingKaart({ meting, index, profielen, onOpen }) {
+// Toont: naam, aantal (bv. ×3), maten, profiel, foto's en RAL-kleur.
+function MetingKaart({ meting, index, projectRal, profielen, onOpen }) {
   const info = soortInfo(meting.soort);
   const m = meting.maten || {};
   const profielNaam = profielen.find(p => p.id === meting.profiel)?.naam;
@@ -169,6 +183,10 @@ function MetingKaart({ meting, index, profielen, onOpen }) {
 
   const aantal = parseInt(meting.aantal, 10) || 0;
 
+  // De kleur die voor dit onderdeel geldt: eigen RAL of anders die van het project.
+  const effRal = meting.ral?.trim() || projectRal?.trim() || "";
+  const ralHex = ralNaarHex(effRal);
+
   return (
     <Card style={{ cursor: "pointer", padding: 16 }}>
       <div onClick={onOpen} style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -181,27 +199,29 @@ function MetingKaart({ meting, index, profielen, onOpen }) {
         }}>
           ×{aantal}
         </div>
-        <div style={{ minWidth: 0 }}>
-          {/* Soort-label (Waterslag / Dakkap) als klein gekleurd chipje */}
-          <span style={{
-            display: "inline-block", fontSize: 11, fontWeight: 700, color: "#fff",
-            background: C.brand, borderRadius: 6, padding: "2px 8px", marginBottom: 4,
-          }}>
-            {info.label}
-          </span>
+        <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: C.t1 }}>
             {meting.naam?.trim() || `${info.label} ${meting.volgnummer || index + 1}`}
           </div>
           <div style={{ fontSize: 13, color: C.t3, marginTop: 3, fontFamily: FM }}>
             {matenTekst}
           </div>
-          <div style={{ fontSize: 12, color: C.t4, marginTop: 2 }}>
-            {profielNaam ? `Profiel: ${profielNaam}` : "nog geen profiel gekozen"}
-            {meting.fotos?.length ? ` · ${meting.fotos.length} foto${meting.fotos.length === 1 ? "" : "'s"}` : ""}
+          <div style={{ fontSize: 12, color: C.t4, marginTop: 2, display: "flex",
+            alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <span>{profielNaam ? `Profiel: ${profielNaam}` : "nog geen profiel"}</span>
+            {meting.fotos?.length ? <span>· {meting.fotos.length} foto{meting.fotos.length === 1 ? "" : "'s"}</span> : null}
+            {effRal ? (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                · <span style={{ width: 11, height: 11, borderRadius: 3,
+                    border: `1px solid ${C.sep}`, background: ralHex || C.inset,
+                    display: "inline-block" }} />
+                RAL {effRal.replace(/\D/g, "") || effRal}
+              </span>
+            ) : null}
           </div>
         </div>
         {/* Pijltje rechts: hint dat je de kaart kunt aantikken */}
-        <div style={{ marginLeft: "auto", color: C.t4, fontSize: 18 }}>›</div>
+        <div style={{ color: C.t4, fontSize: 18 }}>›</div>
       </div>
     </Card>
   );

@@ -9,9 +9,10 @@
 //  Alles is meteen live zichtbaar en wordt bewaard in de browser.
 // ══════════════════════════════════════════════════════════════════
 
-import React from "react";
+import React, { useState } from "react";
 import { C, F, FM, Card, Label, TxtInp, PrimaryBtn, SecondaryBtn } from "../huisstijl.jsx";
 import { SOORTEN } from "../soorten.js";
+import ProfielTekenaar from "../componenten/ProfielTekenaar.jsx";
 
 // Klein hulpje om een uniek id te maken voor een nieuw profiel.
 const nieuwId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -139,6 +140,7 @@ export default function Instellingen({ instellingen, onWijzig, onHerstel, onTeru
                   volgnr={i + 1}
                   onNaam={(v) => wijzigProfiel(soort, p.id, "naam", v)}
                   onInfo={(v) => wijzigProfiel(soort, p.id, "info", v)}
+                  onLijn={(v) => wijzigProfiel(soort, p.id, "lijn", v)}
                   onVerwijder={() => verwijderProfiel(soort, p.id)}
                 />
               ))}
@@ -168,8 +170,12 @@ export default function Instellingen({ instellingen, onWijzig, onHerstel, onTeru
 }
 
 // ── Eén profiel-regel in de instellingen ───────────────────────────
-// Naam + korte omschrijving aanpasbaar, met een verwijder-knop.
-function ProfielRij({ profiel, volgnr, onNaam, onInfo, onVerwijder }) {
+// Naam + korte omschrijving aanpasbaar, met een verwijder-knop en een
+// uitklapbaar tekenvlak om de vorm (zijkant) te tekenen.
+function ProfielRij({ profiel, volgnr, onNaam, onInfo, onLijn, onVerwijder }) {
+  // Onthoudt of het tekenvlak van dit profiel open staat.
+  const [tekenen, setTekenen] = useState(false);
+
   return (
     <div style={{ border: `1px solid ${C.sep}`, borderRadius: 12, padding: 12,
       display: "flex", flexDirection: "column", gap: 8, background: C.card }}>
@@ -188,8 +194,33 @@ function ProfielRij({ profiel, volgnr, onNaam, onInfo, onVerwijder }) {
             fontSize: 20, cursor: "pointer" }}
         >×</button>
       </div>
+
       {/* Korte omschrijving (mag leeg) */}
       <TxtInp value={profiel.info || ""} onChange={onInfo} placeholder="Korte omschrijving (mag leeg)" />
+
+      {/* Rij: klein voorbeeld van de vorm + knop om te (her)tekenen */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ width: 56, height: 28, borderRadius: 8, background: C.inset,
+          border: `1px solid ${C.sep}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <svg viewBox="0 0 64 32" style={{ width: 50, height: 25 }}>
+            {profiel.lijn
+              ? <polyline points={profiel.lijn} fill="none" stroke={C.brand}
+                  strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              : <circle cx="32" cy="16" r="5" fill="none" stroke={C.t4} strokeWidth="3" />}
+          </svg>
+        </div>
+        <button
+          onClick={() => setTekenen(v => !v)}
+          style={{ border: `1px solid ${C.sep}`, background: C.inset, color: C.brand,
+            borderRadius: 20, padding: "8px 14px", fontFamily: F, fontSize: 13,
+            fontWeight: 600, cursor: "pointer" }}
+        >
+          {tekenen ? "Klaar met tekenen" : (profiel.lijn ? "Vorm opnieuw tekenen" : "Vorm tekenen")}
+        </button>
+      </div>
+
+      {/* Het tekenvlak (alleen als open) */}
+      {tekenen && <ProfielTekenaar lijn={profiel.lijn} onChange={onLijn} />}
     </div>
   );
 }

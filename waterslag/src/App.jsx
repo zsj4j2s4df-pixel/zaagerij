@@ -37,6 +37,7 @@ export function legeMeting(soort, volgnummer) {
     soort,                    // "waterslag" of "dakkap"
     naam: "",                 // bv. "Voorgevel links" (mag leeg blijven)
     aantal: "1",              // hoeveel gelijke stuks dit type heeft
+    ral: "",                  // eigen RAL-kleur (leeg = volgt de projectkleur)
     maten: { lengte: "", breedte: "", hoogte: "", hoek: "" }, // in mm / graden
     profiel: null,            // gekozen profiel-id uit de ProfielKiezer
     details: { kopschotjes: false, extraDetail: false, extraDetailTekst: "" },
@@ -53,6 +54,7 @@ export default function App() {
   const [projecten, setProjecten] = useState([]);               // alle projecten
   const [actiefProjectId, setActiefProjectId] = useState(null); // open project
   const [actieveMetingId, setActieveMetingId] = useState(null); // open meting
+  const [actieveSoort, setActieveSoort] = useState("waterslag"); // open tab in project
   const [toonInstellingen, setToonInstellingen] = useState(false);
 
   // ── Bij het opstarten: eerder opgeslagen gegevens inladen ──────
@@ -65,10 +67,11 @@ export default function App() {
     //  • oude "waterslagen" → "metingen" (met soort "waterslag")
     const geladen = leesProjecten().map(p => {
       const metingen = (p.metingen || p.waterslagen || []).map(m => ({
-        soort: "waterslag", ...m,
+        soort: "waterslag", ral: "", ...m,
       }));
       return {
         opmerking: "",
+        ral: "",
         ordernummer: p.ordernummer ?? p.omschrijving ?? "",
         ...p,
         metingen,
@@ -115,6 +118,7 @@ export default function App() {
       id: nieuwId(),
       klant: "",
       ordernummer: "",
+      ral: "",
       metingen: [],
       opmerking: "",
     };
@@ -155,6 +159,7 @@ export default function App() {
     const aantalVanSoort = actiefProject.metingen.filter(m => m.soort === soort).length;
     const meting = legeMeting(soort, aantalVanSoort + 1);
     wijzigProject({ metingen: [...actiefProject.metingen, meting] });
+    setActieveSoort(soort);        // zorg dat de juiste tab open blijft
     setActieveMetingId(meting.id);
   }
 
@@ -202,6 +207,7 @@ export default function App() {
     return (
       <MetingScherm
         meting={actieveMeting}
+        projectRal={actiefProject.ral}
         profielen={instellingen.profielen[actieveMeting.soort] || []}
         onWijzig={wijzigMeting}
         onTerug={sluitMeting}
@@ -216,6 +222,8 @@ export default function App() {
       <ProjectScherm
         project={actiefProject}
         instellingen={instellingen}
+        actieveSoort={actieveSoort}
+        onKiesSoort={setActieveSoort}
         onWijzig={wijzigProject}
         onNieuweMeting={nieuweMeting}
         onOpenMeting={openMeting}

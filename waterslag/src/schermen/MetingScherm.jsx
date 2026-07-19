@@ -11,9 +11,10 @@ import { C, F, Card, TxtInp, NumInp, NoteInp, Label, PrimaryBtn, SecondaryBtn } 
 import MatenFormulier from "../componenten/MatenFormulier.jsx";
 import ProfielKiezer from "../componenten/ProfielKiezer.jsx";
 import FotoLijst from "../componenten/FotoLijst.jsx";
+import RalKiezer from "../componenten/RalKiezer.jsx";
 import { soortInfo } from "../soorten.js";
 
-export default function MetingScherm({ meting, profielen, onWijzig, onTerug, onVerwijder }) {
+export default function MetingScherm({ meting, projectRal, profielen, onWijzig, onTerug, onVerwijder }) {
   const info = soortInfo(meting.soort);
   const standaardNaam = `${info.label} ${meting.volgnummer || ""}`.trim();
 
@@ -67,6 +68,19 @@ export default function MetingScherm({ meting, profielen, onWijzig, onTerug, onV
           <div style={{ fontSize: 12, color: C.t4, marginTop: 8 }}>
             {info.gelijkTekst}
           </div>
+        </Card>
+
+        {/* De RAL-kleur van dit onderdeel. Leeg = de projectkleur geldt. */}
+        <Card>
+          <RalKiezer
+            label="RAL-kleur (dit onderdeel)"
+            value={meting.ral}
+            onChange={(v) => onWijzig({ ral: v })}
+            placeholder={projectRal ? `Volgt project: ${projectRal}` : "bijv. 7016"}
+            hint={projectRal
+              ? "Laat leeg om de projectkleur te volgen."
+              : "Nog geen projectkleur ingesteld."}
+          />
         </Card>
 
         {/* De maten (mm) */}
