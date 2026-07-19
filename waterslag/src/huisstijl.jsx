@@ -6,13 +6,18 @@
 
 import React from "react";
 
+// De standaard-accentkleur. In het Instellingen-scherm kun je hem wijzigen;
+// dat gebeurt via de CSS-variabele "--accent" (zie hieronder bij "brand").
+export const ACCENT_STANDAARD = "#7E5230";
+
 // ── 1. KLEUREN (design tokens) ───────────────────────────────────
-// Eén centrale plek voor alle kleuren. Wil je later de accentkleur
-// aanpassen? Verander alleen "brand" hieronder en de hele app verandert mee.
+// Eén centrale plek voor alle kleuren. De accentkleur ("brand") leest uit
+// de CSS-variabele --accent, zodat het Instellingen-scherm hem live kan
+// aanpassen. Staat die variabele niet, dan valt hij terug op het bruin.
 export const C = {
   bg:     "#E8E3DD", // zachte beige achtergrond
   card:   "#FFFFFF", // witte kaarten
-  brand:  "#7E5230", // warm bruin/koper — de accentkleur van het bedrijf
+  brand:  "var(--accent, #7E5230)", // accentkleur — live instelbaar
   green:  "#34C759", // Apple-groen (gelukt / aan)
   orange: "#FF9500", // Apple-oranje (let op)
   red:    "#FF3B30", // Apple-rood (fout / verwijderen)

@@ -1,74 +1,98 @@
 // ══════════════════════════════════════════════════════════════════
-//  APP — het centrale brein van de waterslag-app
+//  APP — het centrale brein van de app
 //  Hier woont de "toestand" (state) van de hele app op één plek:
 //    • ingelogd of niet (en wie)
+//    • de instellingen (kleur, merknaam, teksten, profielen)
 //    • de lijst met projecten
-//    • welk project geopend is, en welke waterslag daarbinnen
+//    • welk project geopend is, en welke meting daarbinnen
 //  Vanuit hier kiezen we welk scherm we laten zien.
 //
 //  Opbouw van de gegevens:
-//    project = { id, klant, omschrijving, waterslagen: [...], opmerking }
-//    waterslag = { id, naam, aantal, maten, profiel, details, fotos, opmerking }
-//  Eén waterslag-regel kan dus voor meerdere gelijke ramen staan (aantal).
+//    project = { id, klant, ordernummer, metingen: [...], opmerking }
+//    meting  = { id, soort, naam, aantal, maten, profiel, details, fotos, opmerking }
+//  "soort" is "waterslag" of "dakkap" — beide mogen in één project staan.
+//  Eén meting-regel kan voor meerdere gelijke stuks staan (aantal).
 // ══════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect } from "react";
 import LoginScherm from "./schermen/LoginScherm.jsx";
 import ProjectLijst from "./schermen/ProjectLijst.jsx";
 import ProjectScherm from "./schermen/ProjectScherm.jsx";
-import WaterslagScherm from "./schermen/WaterslagScherm.jsx";
+import MetingScherm from "./schermen/MetingScherm.jsx";
+import Instellingen from "./schermen/Instellingen.jsx";
+import { STANDAARD_INSTELLINGEN, vulInstellingenAan } from "./standaardInstellingen.js";
 import {
   leesProjecten, schrijfProjecten,
   leesSessie, schrijfSessie, wisSessie,
+  leesInstellingen, schrijfInstellingen,
 } from "./opslag.js";
 
 // Klein hulpje om een uniek id te maken.
 const nieuwId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
-// Een lege waterslag-regel (één type raam, eventueel meerdere stuks).
-export function legeWaterslag(volgnummer) {
+// Een lege meting-regel (één type, eventueel meerdere stuks).
+export function legeMeting(soort, volgnummer) {
   return {
     id: nieuwId(),
+    soort,                    // "waterslag" of "dakkap"
     naam: "",                 // bv. "Voorgevel links" (mag leeg blijven)
-    aantal: "1",              // hoeveel gelijke ramen dit type heeft
+    aantal: "1",              // hoeveel gelijke stuks dit type heeft
     maten: { lengte: "", breedte: "", hoogte: "", hoek: "" }, // in mm / graden
     profiel: null,            // gekozen profiel-id uit de ProfielKiezer
     details: { kopschotjes: false, extraDetail: false, extraDetailTekst: "" },
     fotos: [],                // [{ id, dataUrl, opmerking }]
     opmerking: "",
-    volgnummer,               // alleen voor de standaardnaam "Waterslag 1, 2, ..."
+    volgnummer,               // voor de standaardnaam "Waterslag 1", "Dakkap 1", ...
   };
 }
 
 export default function App() {
   // ── De centrale toestand ───────────────────────────────────────
   const [gebruiker, setGebruiker] = useState(null);             // string of null
+  const [instellingen, setInstellingen] = useState(STANDAARD_INSTELLINGEN);
   const [projecten, setProjecten] = useState([]);               // alle projecten
   const [actiefProjectId, setActiefProjectId] = useState(null); // open project
-  const [actieveWaterslagId, setActieveWaterslagId] = useState(null); // open waterslag
+  const [actieveMetingId, setActieveMetingId] = useState(null); // open meting
+  const [toonInstellingen, setToonInstellingen] = useState(false);
 
   // ── Bij het opstarten: eerder opgeslagen gegevens inladen ──────
   useEffect(() => {
-    // Oudere projecten (uit een eerdere versie) worden automatisch
-    // bijgewerkt: lege waterslagen-lijst erbij, en het oude veld
-    // "omschrijving" wordt het ordernummer, zodat niets kwijtraakt.
-    const geladen = leesProjecten().map(p => ({
-      waterslagen: [], opmerking: "",
-      ordernummer: p.ordernummer ?? p.omschrijving ?? "",
-      ...p,
-    }));
+    // Instellingen laden en aanvullen met eventueel nieuwe standaardwaarden.
+    setInstellingen(vulInstellingenAan(leesInstellingen()));
+
+    // Projecten laden en oudere opslag netjes bijwerken:
+    //  • veld "omschrijving" → "ordernummer"
+    //  • oude "waterslagen" → "metingen" (met soort "waterslag")
+    const geladen = leesProjecten().map(p => {
+      const metingen = (p.metingen || p.waterslagen || []).map(m => ({
+        soort: "waterslag", ...m,
+      }));
+      return {
+        opmerking: "",
+        ordernummer: p.ordernummer ?? p.omschrijving ?? "",
+        ...p,
+        metingen,
+      };
+    });
     setProjecten(geladen);
+
     const sessie = leesSessie();
     if (sessie && sessie.gebruiker) setGebruiker(sessie.gebruiker);
   }, []);
 
   // Elke wijziging meteen bewaren in de browser (localStorage).
   useEffect(() => { schrijfProjecten(projecten); }, [projecten]);
+  useEffect(() => { schrijfInstellingen(instellingen); }, [instellingen]);
 
-  // Handige verwijzingen naar het open project / de open waterslag.
+  // De accentkleur live toepassen op de hele app via de CSS-variabele --accent.
+  useEffect(() => {
+    document.documentElement.style.setProperty("--accent", instellingen.accent);
+  }, [instellingen.accent]);
+
+  // Handige verwijzingen naar het open project / de open meting.
   const actiefProject = projecten.find(p => p.id === actiefProjectId) || null;
-  const actieveWaterslag =
-    actiefProject?.waterslagen.find(w => w.id === actieveWaterslagId) || null;
+  const actieveMeting =
+    actiefProject?.metingen.find(m => m.id === actieveMetingId) || null;
 
   // ── Inloggen / uitloggen ───────────────────────────────────────
 
@@ -79,15 +103,19 @@ export default function App() {
     else wisSessie();
   }
 
+  // ── Instellingen wijzigen ──────────────────────────────────────
+  function wijzigInstellingen(wijziging) {
+    setInstellingen(vorige => ({ ...vorige, ...wijziging }));
+  }
+
   // ── Projecten ──────────────────────────────────────────────────
 
-  // Nieuw, leeg project aanmaken en meteen openen.
   function nieuwProject() {
     const project = {
       id: nieuwId(),
       klant: "",
       ordernummer: "",
-      waterslagen: [],
+      metingen: [],
       opmerking: "",
     };
     setProjecten(vorige => [project, ...vorige]);
@@ -108,84 +136,103 @@ export default function App() {
       ...actiefProject,
       id: nieuwId(),
       klant: (actiefProject.klant || "Project") + " (kopie)",
-      // Ook de waterslagen krijgen nieuwe id's, anders delen ze gegevens.
-      waterslagen: actiefProject.waterslagen.map(w => ({ ...w, id: nieuwId() })),
+      // Ook de metingen krijgen nieuwe id's, anders delen ze gegevens.
+      metingen: actiefProject.metingen.map(m => ({ ...m, id: nieuwId() })),
     };
     setProjecten(vorige => [kopie, ...vorige]);
     setActiefProjectId(kopie.id);
   }
 
   function openProject(id) { setActiefProjectId(id); }
-  function sluitProject() { setActiefProjectId(null); setActieveWaterslagId(null); }
+  function sluitProject() { setActiefProjectId(null); setActieveMetingId(null); }
 
-  // ── Waterslagen binnen het open project ────────────────────────
+  // ── Metingen binnen het open project ───────────────────────────
 
-  // Nieuwe waterslag-regel toevoegen en meteen openen.
-  function nieuweWaterslag() {
-    const ws = legeWaterslag(actiefProject.waterslagen.length + 1);
-    wijzigProject({ waterslagen: [...actiefProject.waterslagen, ws] });
-    setActieveWaterslagId(ws.id);
+  // Nieuwe meting-regel toevoegen en meteen openen. "soort" bepaalt
+  // of het een waterslag of een dakkap is.
+  function nieuweMeting(soort) {
+    // Volgnummer per soort, zodat je "Waterslag 1, 2" en "Dakkap 1" krijgt.
+    const aantalVanSoort = actiefProject.metingen.filter(m => m.soort === soort).length;
+    const meting = legeMeting(soort, aantalVanSoort + 1);
+    wijzigProject({ metingen: [...actiefProject.metingen, meting] });
+    setActieveMetingId(meting.id);
   }
 
-  // Een paar velden van de open waterslag wijzigen (bv. { aantal: "3" }).
-  function wijzigWaterslag(wijziging) {
+  // Een paar velden van de open meting wijzigen (bv. { aantal: "3" }).
+  function wijzigMeting(wijziging) {
     wijzigProject({
-      waterslagen: actiefProject.waterslagen.map(w =>
-        w.id === actieveWaterslagId ? { ...w, ...wijziging } : w
+      metingen: actiefProject.metingen.map(m =>
+        m.id === actieveMetingId ? { ...m, ...wijziging } : m
       ),
     });
   }
 
-  // De open waterslag verwijderen en terug naar het projectscherm.
-  function verwijderWaterslag() {
+  // De open meting verwijderen en terug naar het projectscherm.
+  function verwijderMeting() {
     wijzigProject({
-      waterslagen: actiefProject.waterslagen.filter(w => w.id !== actieveWaterslagId),
+      metingen: actiefProject.metingen.filter(m => m.id !== actieveMetingId),
     });
-    setActieveWaterslagId(null);
+    setActieveMetingId(null);
   }
 
-  function openWaterslag(id) { setActieveWaterslagId(id); }
-  function sluitWaterslag() { setActieveWaterslagId(null); }
+  function openMeting(id) { setActieveMetingId(id); }
+  function sluitMeting() { setActieveMetingId(null); }
 
   // ── Kiezen welk scherm we tonen ────────────────────────────────
 
   // 1) Niet ingelogd → altijd eerst het loginscherm.
   if (!gebruiker) {
-    return <LoginScherm onInloggen={inloggen} />;
+    return <LoginScherm onInloggen={inloggen} instellingen={instellingen} />;
   }
 
-  // 2) Een waterslag open → het waterslag-scherm (maten, profiel, foto's).
-  if (actiefProject && actieveWaterslag) {
+  // 2) Instellingen-scherm geopend.
+  if (toonInstellingen) {
     return (
-      <WaterslagScherm
-        waterslag={actieveWaterslag}
-        onWijzig={wijzigWaterslag}
-        onTerug={sluitWaterslag}
-        onVerwijder={verwijderWaterslag}
+      <Instellingen
+        instellingen={instellingen}
+        onWijzig={wijzigInstellingen}
+        onHerstel={() => setInstellingen(STANDAARD_INSTELLINGEN)}
+        onTerug={() => setToonInstellingen(false)}
       />
     );
   }
 
-  // 3) Een project open → het projectscherm met de lijst waterslagen.
+  // 3) Een meting open → het meting-scherm (maten, profiel, foto's).
+  if (actiefProject && actieveMeting) {
+    return (
+      <MetingScherm
+        meting={actieveMeting}
+        profielen={instellingen.profielen[actieveMeting.soort] || []}
+        onWijzig={wijzigMeting}
+        onTerug={sluitMeting}
+        onVerwijder={verwijderMeting}
+      />
+    );
+  }
+
+  // 4) Een project open → het projectscherm met de lijst metingen.
   if (actiefProject) {
     return (
       <ProjectScherm
         project={actiefProject}
+        instellingen={instellingen}
         onWijzig={wijzigProject}
-        onNieuweWaterslag={nieuweWaterslag}
-        onOpenWaterslag={openWaterslag}
+        onNieuweMeting={nieuweMeting}
+        onOpenMeting={openMeting}
         onOpslaanAls={opslaanAls}
         onTerug={sluitProject}
       />
     );
   }
 
-  // 4) Alleen ingelogd → de projectlijst.
+  // 5) Alleen ingelogd → de projectlijst.
   return (
     <ProjectLijst
       projecten={projecten}
+      instellingen={instellingen}
       onNieuwProject={nieuwProject}
       onOpenProject={openProject}
+      onOpenInstellingen={() => setToonInstellingen(true)}
     />
   );
 }

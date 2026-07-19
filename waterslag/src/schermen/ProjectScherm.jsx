@@ -1,26 +1,34 @@
 // ══════════════════════════════════════════════════════════════════
 //  SCHERM 3 — PROJECTSCHERM (hoofdscherm van één project)
-//  Bovenaan de klantgegevens, daaronder de lijst met waterslagen.
-//  Eén waterslag-regel kan voor meerdere gelijke ramen staan (aantal):
-//  bv. 5 ramen = "Type A × 3" + twee losse afwijkende regels.
+//  Bovenaan de klantgegevens, daaronder de lijst met metingen.
+//  Een meting is een waterslag óf een dakkap; beide mogen in hetzelfde
+//  project. Eén regel kan voor meerdere gelijke stuks staan (aantal):
+//  bv. 5 ramen = "Type A ×3" + twee losse afwijkende regels.
 //  Onderaan: opmerkingen + "Opslaan" en "Opslaan als".
 // ══════════════════════════════════════════════════════════════════
 
 import React, { useState } from "react";
 import { C, F, FM, Card, TxtInp, Label, PrimaryBtn, SecondaryBtn } from "../huisstijl.jsx";
 import ProjectOpmerkingen from "../componenten/ProjectOpmerkingen.jsx";
-import { PROFIELEN } from "../componenten/ProfielKiezer.jsx";
+import { soortInfo } from "../soorten.js";
 
 export default function ProjectScherm({
-  project, onWijzig, onNieuweWaterslag, onOpenWaterslag, onOpslaanAls, onTerug,
+  project, instellingen, onWijzig, onNieuweMeting, onOpenMeting, onOpslaanAls, onTerug,
 }) {
   // Korte melding na het opslaan ("Opgeslagen ✓").
   const [melding, setMelding] = useState("");
 
-  const waterslagen = project.waterslagen || [];
+  const metingen = project.metingen || [];
 
-  // Totaal aantal ramen: de aantallen van alle regels bij elkaar.
-  const totaalRamen = waterslagen.reduce((som, w) => som + (parseInt(w.aantal, 10) || 0), 0);
+  // Totaal aantal stuks per soort, bv. { waterslag: 5, dakkap: 2 }.
+  const totalen = {};
+  metingen.forEach(m => {
+    totalen[m.soort] = (totalen[m.soort] || 0) + (parseInt(m.aantal, 10) || 0);
+  });
+  // Daarvan een leesbaar zinnetje maken: "5 waterslagen · 2 dakkappen".
+  const totaalTekst = Object.keys(totalen)
+    .map(s => `${totalen[s]} ${soortInfo(s).meervoud}`)
+    .join(" · ");
 
   // Opslaan gebeurt eigenlijk al automatisch (localStorage), maar de knop
   // geeft een geruststellend "Opgeslagen ✓" zodat je weet dat het goed zit.
@@ -28,7 +36,6 @@ export default function ProjectScherm({
     setMelding("Opgeslagen ✓");
     setTimeout(() => setMelding(""), 1800);
   }
-
   function opslaanAls() {
     onOpslaanAls();
     setMelding("Kopie gemaakt ✓");
@@ -83,34 +90,44 @@ export default function ProjectScherm({
           </div>
         </Card>
 
-        {/* Kopje boven de waterslagen-lijst, met het totaal */}
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-          <div style={{ fontSize: 16, fontWeight: 800, color: C.t1 }}>Waterslagen</div>
-          <div style={{ fontSize: 13, color: C.t3 }}>
-            {waterslagen.length === 0
-              ? "nog geen"
-              : `${waterslagen.length} ${waterslagen.length === 1 ? "type" : "types"} · ${totaalRamen} ${totaalRamen === 1 ? "raam" : "ramen"} totaal`}
+        {/* Kopje boven de lijst, met het totaal per soort */}
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
+          <div style={{ fontSize: 16, fontWeight: 800, color: C.t1 }}>Metingen</div>
+          <div style={{ fontSize: 13, color: C.t3, textAlign: "right" }}>
+            {metingen.length === 0 ? "nog geen" : totaalTekst}
           </div>
         </div>
 
-        {/* De lijst met waterslag-regels */}
-        {waterslagen.length === 0 ? (
+        {/* De lijst met metingen */}
+        {metingen.length === 0 ? (
           <div style={{ textAlign: "center", color: C.t3, fontSize: 14,
             padding: "18px 20px", lineHeight: 1.5 }}>
-            Nog geen waterslagen in dit project.<br />
-            Gelijke ramen voer je één keer in en geef je een aantal mee.
+            Nog geen metingen in dit project.<br />
+            Voeg hieronder een waterslag of een dakkap toe.
           </div>
         ) : (
-          waterslagen.map((w, i) => (
-            <WaterslagKaart key={w.id} waterslag={w} index={i}
-              onOpen={() => onOpenWaterslag(w.id)} />
+          metingen.map((m, i) => (
+            <MetingKaart key={m.id} meting={m} index={i}
+              profielen={instellingen.profielen[m.soort] || []}
+              onOpen={() => onOpenMeting(m.id)} />
           ))
         )}
 
-        {/* Nieuwe waterslag-regel toevoegen */}
-        <PrimaryBtn onClick={onNieuweWaterslag} icon={<span style={{ fontSize: 18 }}>+</span>}>
-          Waterslag toevoegen
-        </PrimaryBtn>
+        {/* Twee toevoeg-knoppen: kies waterslag of dakkap */}
+        <div style={{ display: "flex", gap: 10 }}>
+          <div style={{ flex: 1 }}>
+            <PrimaryBtn onClick={() => onNieuweMeting("waterslag")}
+              icon={<span style={{ fontSize: 17 }}>+</span>}>
+              Waterslag
+            </PrimaryBtn>
+          </div>
+          <div style={{ flex: 1 }}>
+            <PrimaryBtn onClick={() => onNieuweMeting("dakkap")}
+              icon={<span style={{ fontSize: 17 }}>+</span>}>
+              Dakkap
+            </PrimaryBtn>
+          </div>
+        </div>
 
         {/* Algemene opmerkingen voor het hele project */}
         <ProjectOpmerkingen
@@ -133,14 +150,14 @@ export default function ProjectScherm({
   );
 }
 
-// ── Eén waterslag-regel als aantikbare kaart ───────────────────────
-// Toont: naam, aantal (bv. ×3), de maten en het gekozen profiel.
-function WaterslagKaart({ waterslag, index, onOpen }) {
-  const m = waterslag.maten || {};
-  const profielNaam = PROFIELEN.find(p => p.id === waterslag.profiel)?.naam;
+// ── Eén meting-regel als aantikbare kaart ──────────────────────────
+// Toont: soort-label, naam, aantal (bv. ×3), de maten en het profiel.
+function MetingKaart({ meting, index, profielen, onOpen }) {
+  const info = soortInfo(meting.soort);
+  const m = meting.maten || {};
+  const profielNaam = profielen.find(p => p.id === meting.profiel)?.naam;
 
   // Korte maten-samenvatting, alleen van ingevulde velden.
-  // Bv. "L 1200 · B 180 · H 40 mm · 15°".
   const mmDelen = [];
   if (m.lengte)  mmDelen.push(`L ${m.lengte}`);
   if (m.breedte) mmDelen.push(`B ${m.breedte}`);
@@ -150,7 +167,7 @@ function WaterslagKaart({ waterslag, index, onOpen }) {
   if (m.hoek) stukken.push(`${m.hoek}°`);
   const matenTekst = stukken.length ? stukken.join(" · ") : "nog geen maten";
 
-  const aantal = parseInt(waterslag.aantal, 10) || 0;
+  const aantal = parseInt(meting.aantal, 10) || 0;
 
   return (
     <Card style={{ cursor: "pointer", padding: 16 }}>
@@ -165,15 +182,22 @@ function WaterslagKaart({ waterslag, index, onOpen }) {
           ×{aantal}
         </div>
         <div style={{ minWidth: 0 }}>
+          {/* Soort-label (Waterslag / Dakkap) als klein gekleurd chipje */}
+          <span style={{
+            display: "inline-block", fontSize: 11, fontWeight: 700, color: "#fff",
+            background: C.brand, borderRadius: 6, padding: "2px 8px", marginBottom: 4,
+          }}>
+            {info.label}
+          </span>
           <div style={{ fontSize: 15, fontWeight: 700, color: C.t1 }}>
-            {waterslag.naam?.trim() || `Waterslag ${waterslag.volgnummer || index + 1}`}
+            {meting.naam?.trim() || `${info.label} ${meting.volgnummer || index + 1}`}
           </div>
           <div style={{ fontSize: 13, color: C.t3, marginTop: 3, fontFamily: FM }}>
             {matenTekst}
           </div>
           <div style={{ fontSize: 12, color: C.t4, marginTop: 2 }}>
             {profielNaam ? `Profiel: ${profielNaam}` : "nog geen profiel gekozen"}
-            {waterslag.fotos?.length ? ` · ${waterslag.fotos.length} foto${waterslag.fotos.length === 1 ? "" : "'s"}` : ""}
+            {meting.fotos?.length ? ` · ${meting.fotos.length} foto${meting.fotos.length === 1 ? "" : "'s"}` : ""}
           </div>
         </div>
         {/* Pijltje rechts: hint dat je de kaart kunt aantikken */}

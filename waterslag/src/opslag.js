@@ -39,3 +39,7 @@ export const schrijfProjecten = (p) => schrijf(SLEUTELS.projecten, p);
 export const leesSessie   = ()   => lees(SLEUTELS.sessie, null);
 export const schrijfSessie = (s)  => schrijf(SLEUTELS.sessie, s);
 export const wisSessie    = ()   => localStorage.removeItem(SLEUTELS.sessie);
+
+// ── Instellingen (huisstijl: kleur, merknaam, teksten, profielen) ─
+export const leesInstellingen   = ()   => lees(SLEUTELS.instellingen, null);
+export const schrijfInstellingen = (i)  => schrijf(SLEUTELS.instellingen, i);

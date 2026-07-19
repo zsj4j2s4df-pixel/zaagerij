@@ -8,16 +8,17 @@
 import React from "react";
 import { C, F, NumInp, Label } from "../huisstijl.jsx";
 
-export default function MatenFormulier({ maten, onChange }) {
+export default function MatenFormulier({ maten, onChange, soort }) {
   // Eén veld wijzigen, de rest laten zoals het was.
   const zet = (veld) => (waarde) => onChange({ ...maten, [veld]: waarde });
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 
-      {/* Het voorbeeldtekeningetje: vooraanzicht (lengte) + doorsnede
-          (breedte, hoogte, hoek). De namen matchen de velden eronder. */}
-      <MaatVoorbeeld />
+      {/* Het voorbeeldtekeningetje hoort bij een waterslag; bij een dakkap
+          laten we het weg (dat ziet er anders uit). De namen in het
+          tekeningetje matchen de velden eronder. */}
+      {soort !== "dakkap" && <MaatVoorbeeld />}
 
       {/* Twee kolommen naast elkaar; past mooi op een telefoonscherm. */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>

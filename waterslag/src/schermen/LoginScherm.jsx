@@ -7,7 +7,7 @@
 import React, { useState } from "react";
 import { C, F, Card, TxtInp, Toggle, PrimaryBtn, Label } from "../huisstijl.jsx";
 
-export default function LoginScherm({ onInloggen }) {
+export default function LoginScherm({ onInloggen, instellingen }) {
   // Lokale toestand van dit scherm: wat er in de velden staat.
   const [gebruikersnaam, setGebruikersnaam] = useState("");
   const [wachtwoord, setWachtwoord] = useState("");
@@ -30,13 +30,14 @@ export default function LoginScherm({ onInloggen }) {
       paddingTop: "calc(24px + env(safe-area-inset-top))",
       paddingBottom: "calc(24px + env(safe-area-inset-bottom))",
     }}>
-      {/* Titel / merknaam boven de kaart */}
+      {/* Titel / merknaam boven de kaart — komt uit de instellingen,
+          dus aanpasbaar in het Instellingen-scherm. */}
       <div style={{ textAlign: "center", marginBottom: 20 }}>
         <div style={{ fontSize: 26, fontWeight: 800, color: C.brand, letterSpacing: "-0.02em" }}>
-          Waterslag
+          {instellingen?.merknaam || "Waterslag"}
         </div>
         <div style={{ fontSize: 14, color: C.t3, marginTop: 4 }}>
-          Waterslagen inmeten op locatie
+          {instellingen?.begroeting || "Waterslagen inmeten op locatie"}
         </div>
       </div>
 
