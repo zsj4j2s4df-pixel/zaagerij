@@ -19,7 +19,7 @@ import { useBreed } from "../useBreed.js";
 const nieuwId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 // Een paar snelkeuze-kleuren om met één tik de accentkleur te zetten.
-const KLEUR_SNELKEUZE = ["#7E5230", "#2F6F4F", "#1F5C8B", "#B4472E", "#5B4B8A", "#3A3A3C"];
+const KLEUR_SNELKEUZE = ["#007AFF", "#2F6F4F", "#1F5C8B", "#B4472E", "#5B4B8A", "#3A3A3C"];
 
 export default function Instellingen({ instellingen, onWijzig, onHerstel, onTerug }) {
   const breed = useBreed();          // desktop = twee kolommen naast elkaar
@@ -81,12 +81,12 @@ export default function Instellingen({ instellingen, onWijzig, onHerstel, onTeru
               style={{ width: 52, height: 44, border: `1px solid ${C.sep}`,
                 borderRadius: 10, background: "none", padding: 0, cursor: "pointer", flexShrink: 0 }}
             />
-            {/* De kleurcode als tekst (bv. #7E5230) */}
+            {/* De kleurcode als tekst (bv. #007AFF) */}
             <div style={{ flex: 1 }}>
               <TxtInp
                 value={instellingen.accent}
                 onChange={(v) => onWijzig({ accent: v })}
-                placeholder="#7E5230"
+                placeholder="#007AFF"
               />
             </div>
           </div>
